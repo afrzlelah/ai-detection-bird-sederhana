@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AI Chicken Repeller</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <style>
+      body {
+        text-align: center;
+        font-family: sans-serif;
+        background: #1a1a1a;
+        color: white;
+      }
+      video {
+        width: 90%;
+        border-radius: 10px;
+        border: 2px solid #333;
+      }
+      button {
+        padding: 15px 30px;
+        font-size: 18px;
+        margin: 20px;
+        cursor: pointer;
+        border-radius: 5px;
+        background: #27ae60;
+        color: white;
+        border: none;
+      }
+      #status {
+        font-weight: bold;
+        color: #f1c40f;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>AI Repeller (JS Version)</h1>
+    <p id="status">Memuat Model AI...</p>
+    <button id="startBtn" disabled>Klik untuk Mulai Sistem</button>
+    <br />
+    <video id="webcam" autoplay playsinline></video>
+    <audio id="alarm" src="tamatlah-sudah.mp3"></audio>
+
+    <script>
+      const video = document.getElementById("webcam");
+      const status = document.getElementById("status");
+      const startBtn = document.getElementById("startBtn");
+      const alarm = document.getElementById("alarm");
+      let model;
+
+      // 1. Inisialisasi Kamera & Model
+      async function init() {
+        try {
+          model = await cocoSsd.load();
+          status.innerText = "Model Siap! Klik tombol start.";
+          startBtn.disabled = false;
+
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" }, // Pakai kamera belakang HP
+            audio: false,
+          });
+          video.srcObject = stream;
+        } catch (err) {
+          status.innerText = "Error: " + err.message;
+        }
+      }
+
+      // 2. Loop Deteksi
+      async function detectFrame() {
+        const predictions = await model.detect(video);
+
+        let detectedItems = predictions.map((p) => p.class);
+        console.log(detectedItems);
+
+        // Logika: Ada 'bird', Tidak ada 'person'
+        const isBird = detectedItems.includes("bird");
+        const isPerson = detectedItems.includes("person");
+
+        if (isBird && !isPerson) {
+          if (alarm.paused) {
+            status.innerText = "⚠️ AYAM TERDETEKSI! MENGUSIR...";
+            alarm.play();
+          }
+        } else {
+          status.innerText = isPerson
+            ? "Ada orang, sistem diam."
+            : "Memantau...";
+        }
+
+        requestAnimationFrame(detectFrame);
+      }
+
+      startBtn.onclick = () => {
+        alarm.play().then(() => alarm.pause()); // Unlock audio (Browser Policy)
+        detectFrame();
+        startBtn.style.display = "none";
+      };
+
+      init();
+    </script>
+  </body>
+</html>
