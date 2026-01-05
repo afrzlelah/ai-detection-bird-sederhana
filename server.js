@@ -4,9 +4,10 @@ const path = require("path");
 
 app.use(express.static("public"));
 
-// Gunakan IP laptopmu agar bisa diakses dari HP
-const PORT = 3000;
-app.get("/", (req, res, next) => {
-  res.sendFile("./public/index.html");
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
-app.listen(PORT);
+
+// Vercel tidak butuh app.listen(PORT) secara eksplisit seperti ini,
+// tapi untuk testing lokal tetap boleh ada.
+module.exports = app;
